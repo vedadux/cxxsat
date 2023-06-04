@@ -35,6 +35,7 @@ var_t Solver::make_and(const var_t a, const var_t b)
 var_t Solver::make_and(const std::vector<var_t>& ins)
 {
     if (ins.empty()) return var_t::ONE;
+    if (ins.size() == 2) return make_and(ins[0], ins[1]);
     std::vector<var_t> big_clause;
     big_clause.reserve(ins.size() + 1);
 

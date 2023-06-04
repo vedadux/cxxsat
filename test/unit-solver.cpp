@@ -4,11 +4,6 @@
 #include <map>
 #include <cassert>
 
-void hello()
-{
-    std::cout << "Hello, World!" << std::endl;
-}
-
 using test_func_t = void (*)();
 using Solver = cxxsat::Solver;
 using var_t = cxxsat::var_t;
@@ -50,6 +45,7 @@ void test_and()
         assert(solver.value(c) == (pos_a && pos_b));
     }
 }
+
 
 void test_or()
 {
@@ -130,13 +126,68 @@ void test_xor()
 }
 
 
+void test_mux()
+{
+    Solver solver;
 
+    var_t s = solver.new_var();
+    var_t t = solver.new_var();
+    var_t e = solver.new_var();
+
+    assert(s != t);
+    assert(s != e);
+    assert(t != e);
+
+    assert(t == solver.make_mux(var_t::ONE, t, var_t::ZERO));
+    assert(t == solver.make_mux(var_t::ONE, t, var_t::ONE));
+    assert(t == solver.make_mux(var_t::ONE, t, e));
+
+    assert(e == solver.make_mux(var_t::ZERO, var_t::ZERO, e));
+    assert(e == solver.make_mux(var_t::ZERO, var_t::ONE, e));
+    assert(e == solver.make_mux(var_t::ZERO, t, e));
+
+    assert(s == solver.make_mux(s, var_t::ONE, var_t::ZERO));
+    assert(-s == solver.make_mux(s, var_t::ZERO, var_t::ONE));
+
+    assert(t == solver.make_mux(s, t, t));
+    assert(e == solver.make_mux(s, e, e));
+
+    assert(solver.make_mux(s, var_t::ONE, e) == solver.make_or(s, e));
+    assert(solver.make_mux(s, var_t::ZERO, e) == solver.make_and(-s, e));
+
+    assert(solver.make_mux(s, t, var_t::ONE) == solver.make_or(-s, t));
+    assert(solver.make_mux(s, t, var_t::ZERO) == solver.make_and(s, t));
+
+    assert(solver.make_mux(s, t, -t) == -solver.make_xor(s, t));
+    assert(solver.make_mux(s, -e, e) == solver.make_xor(s, e));
+
+    var_t r = solver.make_mux(s, t, e);
+    assert(r != s && r != t && r != e);
+    assert(r == solver.make_mux(-s, e, t));
+
+    for (int row = 0; row < 8; row++)
+    {
+        bool pos_s = row & 1;
+        bool pos_t = row & 2;
+        bool pos_e = row & 4;
+
+
+        solver.assume(pos_s ? +s : -s);
+        solver.assume(pos_t ? +t : -t);
+        solver.assume(pos_e ? +e : -e);
+        assert(Solver::state_t::STATE_SAT == solver.check());
+
+        std::cout << pos_s << " ? " << pos_t << " : " << pos_e << " == " << solver.value(r) << std::endl;
+        assert(solver.value(r) == (pos_s ? pos_t : pos_e));
+    }
+}
 
 
 const std::map<const std::string, test_func_t> tests = {
     {"test_and", test_and},
     {"test_or", test_or},
     {"test_xor", test_xor},
+    {"test_mux", test_mux},
 };
 
 int main(int argc, const char* argv[])
@@ -146,6 +197,14 @@ int main(int argc, const char* argv[])
         std::cout << "Usage: " << argv[0] << " TEST_NAME" << std::endl;
         return 1;
     }
+
+    if (argv[1] == std::string("all"))
+    {
+        for (const auto& test : tests)
+            test.second();
+        return 0;
+    }
+
     const auto& test_it = tests.find(argv[1]);
     if (test_it == tests.end())
     {
@@ -153,4 +212,5 @@ int main(int argc, const char* argv[])
         return 2;
     }
     test_it->second();
+    return 0;
 }
