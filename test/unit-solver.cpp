@@ -2,13 +2,14 @@
 
 #include <iostream>
 #include <map>
-#include <cassert>
 
-using test_func_t = void (*)();
+#define assert(cond) do { if (!(cond)) return 3; } while (0)
+
+using test_func_t = int (*)();
 using Solver = cxxsat::Solver;
 using var_t = cxxsat::var_t;
 
-void test_and()
+int test_and()
 {
     Solver solver;
 
@@ -44,10 +45,12 @@ void test_and()
         std::cout << pos_a << " & " << pos_b << " == " << solver.value(c) << std::endl;
         assert(solver.value(c) == (pos_a && pos_b));
     }
+
+    return 0;
 }
 
 
-void test_or()
+int test_or()
 {
     Solver solver;
 
@@ -83,10 +86,12 @@ void test_or()
         std::cout << pos_a << " | " << pos_b << " == " << solver.value(c) << std::endl;
         assert(solver.value(c) == (pos_a || pos_b));
     }
+
+    return 0;
 }
 
 
-void test_xor()
+int test_xor()
 {
     Solver solver;
 
@@ -123,10 +128,12 @@ void test_xor()
         std::cout << pos_a << " ^ " << pos_b << " == " << solver.value(c) << std::endl;
         assert(solver.value(c) == (pos_a != pos_b));
     }
+
+    return 0;
 }
 
 
-void test_mux()
+int test_mux()
 {
     Solver solver;
 
@@ -180,6 +187,8 @@ void test_mux()
         std::cout << pos_s << " ? " << pos_t << " : " << pos_e << " == " << solver.value(r) << std::endl;
         assert(solver.value(r) == (pos_s ? pos_t : pos_e));
     }
+
+    return 0;
 }
 
 
@@ -200,9 +209,10 @@ int main(int argc, const char* argv[])
 
     if (argv[1] == std::string("all"))
     {
+        int res = 0;
         for (const auto& test : tests)
-            test.second();
-        return 0;
+            { res |= test.second(); }
+        return res;
     }
 
     const auto& test_it = tests.find(argv[1]);
@@ -211,6 +221,5 @@ int main(int argc, const char* argv[])
         std::cout << "Unknown test \"" << argv[1] << "\"" << std::endl;
         return 2;
     }
-    test_it->second();
-    return 0;
+    return test_it->second();
 }
