@@ -102,7 +102,7 @@ var_t VarManager::simplify_xor(var_t a, var_t b)
     if (a == var_t::ZERO) return b;
     if (b == var_t::ZERO) return a;
     if (a == var_t::ONE) return -b;
-    if (b == var_t::ONE) return a;
+    if (b == var_t::ONE) return -a;
 
     if (a == b) return var_t::ZERO;
     if (a == -b) return var_t::ONE;

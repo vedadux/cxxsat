@@ -6,7 +6,9 @@ target_link_libraries(unit-solver libcxxsat)
 target_include_directories(unit-solver PUBLIC ${PROJECT_SOURCE_DIR})
 
 set(SOLVER_TESTS
-  test_and)
+  test_and
+  test_or
+  test_xor)
 
 foreach(TEST_NAME ${SOLVER_TESTS})
     add_test(NAME unit-solver:${TEST_NAME}

@@ -48,4 +48,5 @@ set_target_properties(${SOLVER_LIB_NAME} PROPERTIES
 add_library(libcxxsat Solver.cpp VarManager.cpp vars.cpp)
 target_link_libraries(libcxxsat ${SOLVER_LIB_NAME})
 
+enable_testing()
 add_subdirectory(test)
