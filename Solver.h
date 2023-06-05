@@ -91,8 +91,8 @@ inline void Solver::assume(var_t ass)
     if (ass == var_t::ZERO)
     {
         var_t nv = new_var();
-        ipasir_assume(m_solver, as_int(nv));
-        ipasir_assume(m_solver, -as_int(nv));
+        ipasir_assume(m_solver, as_int(+nv));
+        ipasir_assume(m_solver, as_int(-nv));
         DEBUG(2) << "assuming false" << std::endl;
         return;
     }
