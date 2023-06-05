@@ -9,7 +9,11 @@ set(SOLVER_TESTS
   test_and
   test_or
   test_xor
-  test_mux)
+  test_mux
+  test_and_multi
+  test_or_multi
+  test_at_most
+  test_at_least)
 
 foreach(TEST_NAME ${SOLVER_TESTS})
     add_test(NAME unit-solver:${TEST_NAME}

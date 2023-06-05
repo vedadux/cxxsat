@@ -53,6 +53,8 @@ public:
     var_t make_and(const std::vector<var_t>& ins);
     var_t make_or(const std::vector<var_t>& ins);
     var_t make_at_most(const std::vector<var_t>& ins, uint32_t k);
+    var_t make_at_least(const std::vector<var_t>& ins, uint32_t k);
+
 
     /// Public template function for adding clauses into the solver
     template<typename... Ts>

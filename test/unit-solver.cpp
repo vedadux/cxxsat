@@ -3,11 +3,17 @@
 #include <iostream>
 #include <map>
 
+#ifdef NDEBUG
 #define assert(cond) do { if (!(cond)) return 3; } while (0)
+#else
+#include <cassert>
+#endif
 
 using test_func_t = int (*)();
 using Solver = cxxsat::Solver;
 using var_t = cxxsat::var_t;
+const uint32_t MAX_VECTOR_TEST = 8;
+
 
 int test_and()
 {
@@ -191,12 +197,199 @@ int test_mux()
     return 0;
 }
 
+int test_and_multi()
+{
+    Solver solver;
+
+    std::vector<var_t> ins;
+    var_t res;
+
+    res = solver.make_and(ins);
+    assert(res == var_t::ONE);
+
+    ins.push_back(solver.new_var());
+    res = solver.make_and(ins);
+    assert(res == ins[0]);
+
+    ins.push_back(solver.new_var());
+    res = solver.make_and(ins);
+    assert(res == solver.make_and(ins[0], ins[1]));
+
+    do {
+        ins.push_back(solver.new_var());
+        res = solver.make_and(ins);
+        for (uint32_t row = 0; row < (1 << ins.size()); row++)
+        {
+            bool expected = true;
+            for (uint32_t pos_i = 0; pos_i < ins.size(); pos_i++)
+            {
+                bool pos = row & (1 << pos_i);
+                solver.assume(pos ? +ins[pos_i] : -ins[pos_i]);
+                std::cout << pos << ((pos_i == ins.size() - 1) ? " == " : " & ");
+                expected &= pos;
+            }
+            assert(Solver::state_t::STATE_SAT == solver.check());
+            std::cout << expected << std::endl;
+            assert(solver.value(res) == expected);
+        }
+
+    } while(ins.size() != MAX_VECTOR_TEST);
+
+    return 0;
+}
+
+int test_or_multi()
+{
+    Solver solver;
+
+    std::vector<var_t> ins;
+    var_t res;
+
+    res = solver.make_or(ins);
+    assert(res == var_t::ZERO);
+
+    ins.push_back(solver.new_var());
+    res = solver.make_or(ins);
+    assert(res == ins[0]);
+
+    ins.push_back(solver.new_var());
+    res = solver.make_or(ins);
+    assert(res == solver.make_or(ins[0], ins[1]));
+
+    do {
+        ins.push_back(solver.new_var());
+        res = solver.make_or(ins);
+        for (uint32_t row = 0; row < (1 << ins.size()); row++)
+        {
+            bool expected = false;
+            for (uint32_t pos_i = 0; pos_i < ins.size(); pos_i++)
+            {
+                bool pos = row & (1 << pos_i);
+                solver.assume(pos ? +ins[pos_i] : -ins[pos_i]);
+                std::cout << pos << ((pos_i == ins.size() - 1) ? " == " : " | ");
+                expected |= pos;
+            }
+            assert(Solver::state_t::STATE_SAT == solver.check());
+            std::cout << expected << std::endl;
+            assert(solver.value(res) == expected);
+        }
+
+    } while(ins.size() != MAX_VECTOR_TEST);
+
+    return 0;
+}
+
+int test_at_most()
+{
+    Solver solver;
+
+    std::vector<var_t> ins;
+    var_t res;
+
+    res = solver.make_at_most(ins, 0);
+    assert(res == var_t::ONE);
+
+    res = solver.make_at_most(ins, 1);
+    assert(res == var_t::ONE);
+
+    ins.push_back(solver.new_var());
+
+    res = solver.make_at_most(ins, 0);
+    assert(res == -ins[0]);
+
+    res = solver.make_at_most(ins, 1);
+    assert(res == var_t::ONE);
+
+    res = solver.make_at_most(ins, 2);
+    assert(res == var_t::ONE);
+
+    do {
+        ins.push_back(solver.new_var());
+
+        for (uint32_t k = 0; k <= ins.size() + 1; k++)
+        {
+            res = solver.make_at_most(ins, k);
+
+            for (uint32_t row = 0; row < (1 << ins.size()); row++)
+            {
+                uint32_t expected = 0;
+                for (uint32_t pos_i = 0; pos_i < ins.size(); pos_i++)
+                {
+                    bool pos = row & (1 << pos_i);
+                    solver.assume(pos ? +ins[pos_i] : -ins[pos_i]);
+                    std::cout << pos << ((pos_i == ins.size() - 1) ? " <= " : " + ");
+                    expected += pos;
+                }
+                assert(Solver::state_t::STATE_SAT == solver.check());
+                std::cout << k << " : " << solver.value(res) << std::endl;
+                assert(solver.value(res) == (expected <= k));
+            }
+        }
+    } while (ins.size() != MAX_VECTOR_TEST);
+
+    return 0;
+}
+
+int test_at_least()
+{
+    Solver solver;
+
+    std::vector<var_t> ins;
+    var_t res;
+
+    res = solver.make_at_least(ins, 0);
+    assert(res == var_t::ONE);
+
+    res = solver.make_at_least(ins, 1);
+    assert(res == var_t::ZERO);
+
+    ins.push_back(solver.new_var());
+
+    res = solver.make_at_least(ins, 0);
+    assert(res == var_t::ONE);
+
+    res = solver.make_at_least(ins, 1);
+    assert(res == ins[0]);
+
+    res = solver.make_at_least(ins, 2);
+    assert(res == var_t::ZERO);
+
+    do {
+        ins.push_back(solver.new_var());
+
+        for (uint32_t k = 0; k <= ins.size() + 1; k++)
+        {
+            res = solver.make_at_least(ins, k);
+
+            for (uint32_t row = 0; row < (1 << ins.size()); row++)
+            {
+                uint32_t expected = 0;
+                for (uint32_t pos_i = 0; pos_i < ins.size(); pos_i++)
+                {
+                    bool pos = row & (1 << pos_i);
+                    solver.assume(pos ? +ins[pos_i] : -ins[pos_i]);
+                    std::cout << pos << ((pos_i == ins.size() - 1) ? " >= " : " + ");
+                    expected += pos;
+                }
+                assert(Solver::state_t::STATE_SAT == solver.check());
+                std::cout << k << " : " << solver.value(res) << std::endl;
+                assert(solver.value(res) == (expected >= k));
+            }
+        }
+    } while (ins.size() != MAX_VECTOR_TEST);
+
+    return 0;
+}
 
 const std::map<const std::string, test_func_t> tests = {
     {"test_and", test_and},
     {"test_or", test_or},
     {"test_xor", test_xor},
     {"test_mux", test_mux},
+    {"test_and_multi", test_and_multi},
+    {"test_or_multi", test_or_multi},
+    {"test_at_most", test_at_most},
+    {"test_at_least", test_at_least},
 };
 
 int main(int argc, const char* argv[])
