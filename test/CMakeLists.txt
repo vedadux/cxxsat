@@ -13,7 +13,8 @@ set(SOLVER_TESTS
   test_and_multi
   test_or_multi
   test_at_most
-  test_at_least)
+  test_at_least
+  test_add_clause)
 
 foreach(TEST_NAME ${SOLVER_TESTS})
     add_test(NAME unit-solver:${TEST_NAME}

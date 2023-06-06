@@ -7,6 +7,8 @@
 #define assert(cond) do { if (!(cond)) return 3; } while (0)
 #else
 #include <cassert>
+#include <unordered_set>
+
 #endif
 
 using test_func_t = int (*)();
@@ -121,6 +123,13 @@ int test_xor()
 
     assert(c == solver.make_xor(a, b));
     assert(c == solver.make_xor(-a, -b));
+    assert(c == solver.make_xor(b, a));
+    assert(c == solver.make_xor(-b, -a));
+
+    assert(-c == solver.make_xor(-a, b));
+    assert(-c == solver.make_xor(a, -b));
+    assert(-c == solver.make_xor(b, -a));
+    assert(-c == solver.make_xor(-b, a));
 
     for (int row = 0; row < 4; row++)
     {
@@ -133,6 +142,48 @@ int test_xor()
 
         std::cout << pos_a << " ^ " << pos_b << " == " << solver.value(c) << std::endl;
         assert(solver.value(c) == (pos_a != pos_b));
+    }
+
+    return 0;
+}
+
+int exhaustive_mux(Solver& solver, var_t s, var_t t, var_t e)
+{
+    var_t r = solver.make_mux(s, t, e);
+    assert(r != s && r != t && r != e);
+    assert(r == solver.make_mux(-s, e, t));
+
+    var_t as = cxxsat::abs_var_t(s),
+          at = cxxsat::abs_var_t(t),
+          ae = cxxsat::abs_var_t(e);
+    std::unordered_set<var_t> vars = {as, at, ae};
+    vars.erase(var_t::ONE);
+    vars.erase(var_t::ZERO);
+
+    std::unordered_map<var_t, bool> assigns;
+    assigns.reserve(vars.size());
+
+    for (int row = 0; row < (1 << vars.size()); row++)
+    {
+        assigns.clear();
+        uint32_t var_idx = 0;
+        for (auto v : vars)
+        {
+            const bool val = row & (1 << var_idx);
+            assigns.emplace(v, val);
+            solver.assume(val ? +v : -v);
+        }
+        assigns.emplace(var_t::ONE, true);
+        assigns.emplace(var_t::ZERO, false);
+
+        assert(Solver::state_t::STATE_SAT == solver.check());
+
+        bool pos_s = (as == s) ? assigns.at(as) : !assigns.at(as);
+        bool pos_t = (at == t) ? assigns.at(at) : !assigns.at(at);
+        bool pos_e = (ae == e) ? assigns.at(ae) : !assigns.at(ae);
+
+        std::cout << pos_s << " ? " << pos_t << " : " << pos_e << " == " << solver.value(r) << std::endl;
+        assert(solver.value(r) == (pos_s ? pos_t : pos_e));
     }
 
     return 0;
@@ -151,6 +202,8 @@ int test_mux()
     assert(s != e);
     assert(t != e);
 
+    // test simplifications of output
+
     assert(t == solver.make_mux(var_t::ONE, t, var_t::ZERO));
     assert(t == solver.make_mux(var_t::ONE, t, var_t::ONE));
     assert(t == solver.make_mux(var_t::ONE, t, e));
@@ -163,36 +216,85 @@ int test_mux()
     assert(-s == solver.make_mux(s, var_t::ZERO, var_t::ONE));
 
     assert(t == solver.make_mux(s, t, t));
+    assert(t == solver.make_mux(-s, t, t));
     assert(e == solver.make_mux(s, e, e));
+    assert(e == solver.make_mux(-s, e, e));
 
-    assert(solver.make_mux(s, var_t::ONE, e) == solver.make_or(s, e));
-    assert(solver.make_mux(s, var_t::ZERO, e) == solver.make_and(-s, e));
+    // test simplification as other gates
 
-    assert(solver.make_mux(s, t, var_t::ONE) == solver.make_or(-s, t));
-    assert(solver.make_mux(s, t, var_t::ZERO) == solver.make_and(s, t));
+    assert(!exhaustive_mux(solver, s, var_t::ONE, e));
+    assert(!exhaustive_mux(solver, s, var_t::ZERO, e));
 
-    assert(solver.make_mux(s, t, -t) == -solver.make_xor(s, t));
-    assert(solver.make_mux(s, -e, e) == solver.make_xor(s, e));
+    assert(!exhaustive_mux(solver, s, var_t::ONE, -e));
+    assert(!exhaustive_mux(solver, s, var_t::ZERO, -e));
 
-    var_t r = solver.make_mux(s, t, e);
-    assert(r != s && r != t && r != e);
-    assert(r == solver.make_mux(-s, e, t));
+    assert(!exhaustive_mux(solver, -s, var_t::ONE, e));
+    assert(!exhaustive_mux(solver, -s, var_t::ZERO, e));
 
-    for (int row = 0; row < 8; row++)
-    {
-        bool pos_s = row & 1;
-        bool pos_t = row & 2;
-        bool pos_e = row & 4;
+    assert(!exhaustive_mux(solver, -s, var_t::ONE, -e));
+    assert(!exhaustive_mux(solver, -s, var_t::ZERO, -e));
 
+    assert(!exhaustive_mux(solver, s, t, var_t::ONE));
+    assert(!exhaustive_mux(solver, s, t, var_t::ZERO));
 
-        solver.assume(pos_s ? +s : -s);
-        solver.assume(pos_t ? +t : -t);
-        solver.assume(pos_e ? +e : -e);
-        assert(Solver::state_t::STATE_SAT == solver.check());
+    assert(!exhaustive_mux(solver, s, -t, var_t::ONE));
+    assert(!exhaustive_mux(solver, s, -t, var_t::ZERO));
 
-        std::cout << pos_s << " ? " << pos_t << " : " << pos_e << " == " << solver.value(r) << std::endl;
-        assert(solver.value(r) == (pos_s ? pos_t : pos_e));
-    }
+    assert(!exhaustive_mux(solver, -s, t, var_t::ONE));
+    assert(!exhaustive_mux(solver, -s, t, var_t::ZERO));
+
+    assert(!exhaustive_mux(solver, -s, -t, var_t::ONE));
+    assert(!exhaustive_mux(solver, -s, -t, var_t::ZERO));
+
+    // t == -e
+
+    assert(!exhaustive_mux(solver, +s, +t, -t));
+    assert(!exhaustive_mux(solver, -s, +t, -t));
+
+    assert(!exhaustive_mux(solver, +s, -t, +t));
+    assert(!exhaustive_mux(solver, -s, -t, +t));
+
+    // s == t or s == -t
+
+    assert(!exhaustive_mux(solver, +s, +s, +e));
+    assert(!exhaustive_mux(solver, +s, +s, -e));
+
+    assert(!exhaustive_mux(solver, +s, -s, +e));
+    assert(!exhaustive_mux(solver, +s, -s, -e));
+
+    assert(!exhaustive_mux(solver, -s, +s, +e));
+    assert(!exhaustive_mux(solver, -s, +s, -e));
+
+    assert(!exhaustive_mux(solver, -s, -s, +e));
+    assert(!exhaustive_mux(solver, -s, -s, -e));
+
+    // s == e or s == -e
+
+    assert(!exhaustive_mux(solver, +s, +t, +s));
+    assert(!exhaustive_mux(solver, +s, -t, +s));
+
+    assert(!exhaustive_mux(solver, +s, +t, -s));
+    assert(!exhaustive_mux(solver, +s, -t, -s));
+
+    assert(!exhaustive_mux(solver, -s, +t, +s));
+    assert(!exhaustive_mux(solver, -s, -t, +s));
+
+    assert(!exhaustive_mux(solver, -s, +t, -s));
+    assert(!exhaustive_mux(solver, -s, -t, -s));
+
+    // all are different
+
+    assert(!exhaustive_mux(solver, +s, +t, +e));
+    assert(!exhaustive_mux(solver, -s, +t, +e));
+
+    assert(!exhaustive_mux(solver, +s, +t, -e));
+    assert(!exhaustive_mux(solver, -s, +t, -e));
+
+    assert(!exhaustive_mux(solver, +s, -t, +e));
+    assert(!exhaustive_mux(solver, -s, -t, +e));
+
+    assert(!exhaustive_mux(solver, +s, -t, -e));
+    assert(!exhaustive_mux(solver, -s, -t, -e));
 
     return 0;
 }
@@ -381,6 +483,49 @@ int test_at_least()
     return 0;
 }
 
+int test_add_clause()
+{
+    Solver solver;
+
+    var_t a = solver.new_var();
+    var_t b = solver.new_var();
+    var_t c = solver.new_var();
+
+    uint32_t nc;
+
+    nc = solver.num_clauses();
+    solver.add_clause(var_t::ONE);
+    assert(nc == solver.num_clauses());
+
+    nc = solver.num_clauses();
+    solver.add_clause(a, var_t::ONE);
+    assert(nc == solver.num_clauses());
+
+    nc = solver.num_clauses();
+    solver.add_clause(var_t::ONE, -a);
+    assert(nc == solver.num_clauses());
+
+    nc = solver.num_clauses();
+    solver.add_clause(b, var_t::ONE, -a);
+    assert(nc == solver.num_clauses());
+
+    nc = solver.num_clauses();
+    solver.add_clause(var_t::ZERO, b);
+    assert(nc + 1 == solver.num_clauses());
+
+    nc = solver.num_clauses();
+    solver.add_clause(-c, var_t::ZERO);
+    assert(nc + 1 == solver.num_clauses());
+
+    assert(Solver::state_t::STATE_SAT == solver.check());
+
+    solver.add_clause(var_t::ZERO);
+
+    assert(Solver::state_t::STATE_UNSAT == solver.check());
+
+    return 0;
+}
+
 const std::map<const std::string, test_func_t> tests = {
     {"test_and", test_and},
     {"test_or", test_or},
@@ -390,6 +535,7 @@ const std::map<const std::string, test_func_t> tests = {
     {"test_or_multi", test_or_multi},
     {"test_at_most", test_at_most},
     {"test_at_least", test_at_least},
+    {"test_add_clause", test_add_clause},
 };
 
 int main(int argc, const char* argv[])
