@@ -1,15 +1,14 @@
 #include "Solver.h"
 
-#include <iostream>
-#include <map>
-
 #ifdef NDEBUG
 #define assert(cond) do { if (!(cond)) return 3; } while (0)
 #else
 #include <cassert>
-#include <unordered_set>
-
 #endif
+
+#include <iostream>
+#include <map>
+#include <unordered_set>
 
 using test_func_t = int (*)();
 using Solver = cxxsat::Solver;
