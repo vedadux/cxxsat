@@ -525,6 +525,23 @@ int test_add_clause()
     return 0;
 }
 
+int test_operator()
+{
+    cxxsat::solver = new Solver();
+
+    var_t a = cxxsat::solver->new_var();
+    var_t b = cxxsat::solver->new_var();
+    var_t c = a & b;
+    assert(c == cxxsat::solver->make_and(a, b));
+    var_t d = a | b;
+    assert(d == cxxsat::solver->make_or(a, b));
+    var_t e = a ^ b;
+    assert(e == cxxsat::solver->make_xor(a, b));
+
+    delete cxxsat::solver;
+    return 0;
+}
+
 const std::map<const std::string, test_func_t> tests = {
     {"test_and", test_and},
     {"test_or", test_or},
@@ -535,6 +552,7 @@ const std::map<const std::string, test_func_t> tests = {
     {"test_at_most", test_at_most},
     {"test_at_least", test_at_least},
     {"test_add_clause", test_add_clause},
+    {"test_operator", test_operator}
 };
 
 int main(int argc, const char* argv[])

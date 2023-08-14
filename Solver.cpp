@@ -39,13 +39,18 @@ var_t Solver::make_and(const std::vector<var_t>& ins)
     if (ins.size() == 2) return make_and(ins[0], ins[1]);
     std::vector<var_t> big_clause;
     big_clause.reserve(ins.size() + 1);
-
-    var_t res = new_var();
+    bool is_false = false;
     for (var_t in_var : ins)
     {
         Assert(is_legal(in_var), ILLEGAL_LITERAL);
         Assert(is_known(in_var), UNKNOWN_LITERAL);
+        is_false |= (in_var == var_t::ZERO);
+    }
+    if (is_false) return var_t::ZERO;
 
+    var_t res = new_var();
+    for (var_t in_var : ins)
+    {
         add_clause(+in_var, -res);
         big_clause.push_back(-in_var);
     }

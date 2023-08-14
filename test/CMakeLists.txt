@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.16)
 include(CTest)
 
 add_executable(unit-solver unit-solver.cpp)
-target_link_libraries(unit-solver libcxxsat)
+target_link_libraries(unit-solver cxxsat)
 target_include_directories(unit-solver PUBLIC ${PROJECT_SOURCE_DIR})
 
 set(SOLVER_TESTS

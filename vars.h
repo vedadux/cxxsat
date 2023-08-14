@@ -2,7 +2,6 @@
 #define CXXSAT_VARS_H
 
 #include "debug.h"
-
 #include <cstdint>
 
 namespace cxxsat {

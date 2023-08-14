@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.16)
 project(cxxsat)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -45,8 +45,8 @@ set_target_properties(${SOLVER_LIB_NAME} PROPERTIES
   IMPORTED_LOCATION "${SOLVER_LIB_PATH}"
   LINKER_LANGUAGE CXX)
 
-add_library(libcxxsat Solver.cpp VarManager.cpp vars.cpp)
-target_link_libraries(libcxxsat ${SOLVER_LIB_NAME})
+add_library(cxxsat Solver.cpp VarManager.cpp vars.cpp)
+target_link_libraries(cxxsat ${SOLVER_LIB_NAME})
 
 enable_testing()
 add_subdirectory(test)
