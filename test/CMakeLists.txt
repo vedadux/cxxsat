@@ -14,7 +14,9 @@ set(SOLVER_TESTS
   test_or_multi
   test_at_most
   test_at_least
-  test_add_clause)
+  test_add_clause
+  test_operator
+)
 
 foreach(TEST_NAME ${SOLVER_TESTS})
     add_test(NAME unit-solver:${TEST_NAME}
