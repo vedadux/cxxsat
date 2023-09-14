@@ -89,6 +89,63 @@ var_t Solver::make_xor(var_t a, var_t b)
     return c;
 }
 
+var_t Solver::make_xor(const std::vector<var_t>& ins)
+{
+    std::vector<var_t> actual;
+    uint32_t num_negs = 0;
+    for(var_t v: ins)
+    {
+        if (v == var_t::ZERO)
+            continue;
+        else if (v == var_t::ONE)
+            num_negs += 1;
+        else
+        {
+            if (is_negated(v))
+                num_negs += 1;
+            actual.push_back(abs_var_t(v));
+        }
+    }
+    if (actual.empty()) return (num_negs % 2 == 0) ? var_t::ZERO : var_t::ONE;
+
+    const uint32_t NUM_EXP = 7;
+
+    std::vector<var_t> n_actual;
+    std::vector<var_t> clause(NUM_EXP + 1, var_t::ZERO);
+
+    while (actual.size() != 1)
+    {
+        n_actual.clear();
+        for (uint32_t i = 0; i < actual.size(); i += NUM_EXP)
+        {
+            if (i == actual.size() - 1)
+            {
+                n_actual.push_back(actual.at(i));
+                continue;
+            }
+            var_t res = new_var();
+
+            for (uint32_t comb = 0; comb < (1 << NUM_EXP); comb++)
+            {
+                uint32_t popcnt = 0;
+                for (uint32_t j = 0; j < NUM_EXP; j++)
+                {
+                    const uint32_t sign = (comb >> j) & 1;
+                    popcnt += sign;
+                    const var_t v = i+j < actual.size() ? actual.at(i+j) : var_t::ZERO;
+                    clause.at(j) = sign ? -v : v;
+                }
+                clause.at(NUM_EXP) = (popcnt % 2 == 0) ? -res : res;
+                add_clause(clause);
+            }
+            n_actual.push_back(res);
+        }
+        actual = n_actual;
+    }
+
+    return (num_negs % 2 == 0) ? actual.at(0) : -actual.at(0);
+}
+
 var_t Solver::make_mux(var_t s, var_t t, var_t e)
 {
     var_t r = simplify_mux(s, t, e);

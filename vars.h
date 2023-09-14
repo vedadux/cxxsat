@@ -12,7 +12,9 @@ inline int32_t as_int(var_t const x) { return static_cast<int32_t>(x); }
 inline var_t   as_var(int const x)   { return static_cast<var_t>(x); }
 
 inline var_t operator-(var_t x) { return as_var(-as_int(x)); }
+inline var_t operator!(var_t x) { return -x; }
 inline var_t operator+(var_t x) { return x; }
+
 
 var_t operator&(var_t x, var_t y);
 var_t operator|(var_t x, var_t y);
