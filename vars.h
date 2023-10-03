@@ -11,6 +11,7 @@ enum class var_t : int32_t {ILLEGAL = 0, ZERO = -INT32_MAX, ONE  = +INT32_MAX};
 inline int32_t as_int(var_t const x) { return static_cast<int32_t>(x); }
 inline var_t   as_var(int const x)   { return static_cast<var_t>(x); }
 
+inline var_t from_bool(bool val) {return val ? var_t::ONE : var_t::ZERO; }
 inline var_t operator-(var_t x) { return as_var(-as_int(x)); }
 inline var_t operator!(var_t x) { return -x; }
 inline var_t operator+(var_t x) { return x; }
