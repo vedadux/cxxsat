@@ -28,16 +28,20 @@ var_t VarManager::simplify_and(var_t a, var_t b)
     Assert(is_known(a), UNKNOWN_LITERAL);
     Assert(is_known(b), UNKNOWN_LITERAL);
 
+    var_t res = var_t::ILLEGAL;
     // Standard rules for and with constant
-    if (a == var_t::ZERO || b == var_t::ZERO) return var_t::ZERO;
-    if (a == var_t::ONE) return b;
-    if (b == var_t::ONE) return a;
+    if (a == var_t::ZERO || b == var_t::ZERO) { res = var_t::ZERO; goto done; }
+    if (a == var_t::ONE) { res = b; goto done; }
+    if (b == var_t::ONE) { res = a; goto done; }
     // Simplification rules for and
-    if (a == b) return a;
-    if (a == -b) return var_t::ZERO;
+    if (a == b) { res = a; goto done; }
+    if (a == -b) { res = var_t::ZERO; goto done; }
 
     // See if we already have a variable for this
-    return lookup_and(a, b);
+    res = lookup_and(a, b);
+done:
+    if (res != var_t::ILLEGAL) { hits += 1; }
+    return res;
 }
 
 void VarManager::register_and(var_t a, var_t b, var_t c)
@@ -98,16 +102,20 @@ var_t VarManager::simplify_xor(var_t a, var_t b)
     Assert(is_legal(b), ILLEGAL_LITERAL);
     Assert(is_known(a), UNKNOWN_LITERAL);
     Assert(is_known(b), UNKNOWN_LITERAL);
+    var_t res = var_t::ILLEGAL;
 
-    if (a == var_t::ZERO) return b;
-    if (b == var_t::ZERO) return a;
-    if (a == var_t::ONE) return -b;
-    if (b == var_t::ONE) return -a;
+    if (a == var_t::ZERO) { res = b; goto done; }
+    if (b == var_t::ZERO) { res = a; goto done; }
+    if (a == var_t::ONE)  { res = -b; goto done; }
+    if (b == var_t::ONE)  { res = -a; goto done; }
 
-    if (a == b) return var_t::ZERO;
-    if (a == -b) return var_t::ONE;
+    if (a == b)  { res = var_t::ZERO; goto done; }
+    if (a == -b) { res = var_t::ONE; goto done; }
 
-    return lookup_xor(a, b);
+    res = lookup_xor(a, b);
+done:
+    if (res != var_t::ILLEGAL) { hits += 1; }
+    return res;
 }
 
 void VarManager::register_xor(var_t a, var_t b, var_t c)

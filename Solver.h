@@ -23,6 +23,8 @@ private:
     int m_num_clauses;
     /// IPASIR solver object with generic (void*) type
     void* m_solver;
+    /// Output stream for logging formula
+    std::ostream* m_output;
 
     /// Internal ipasir_add forwarding
     inline void add(var_t x);
@@ -52,6 +54,7 @@ public:
 
     var_t make_and(const std::vector<var_t>& ins);
     var_t make_or(const std::vector<var_t>& ins);
+    var_t make_xor(const std::vector<var_t>& ins);
     var_t make_at_most(const std::vector<var_t>& ins, uint32_t k);
     var_t make_at_least(const std::vector<var_t>& ins, uint32_t k);
 
@@ -66,10 +69,23 @@ public:
     /// Public function for adding clauses from vectors into the solver
     inline void assume(var_t ass);
 
+    static int check_timed_helper(void* state);
+    state_t check_timed(uint32_t num_seconds) noexcept;
     /// Main satisfiability checking routine
     state_t check() noexcept;
     /// Return the value assigned to variable \a a
     bool value(var_t a);
+
+    /// Set the output stream
+    void set_stream(std::ostream* out) { m_output = out; }
+    void clear_stream() { set_stream(nullptr); }
+
+    auto ands_begin() { return m_and_cache.begin(); }
+    auto ands_end()   { return m_and_cache.end(); }
+    auto xors_begin() { return m_xor_cache.begin(); }
+    auto xors_end()   { return m_xor_cache.end(); }
+
+
 
     /// Only default constructor is implemented
     Solver();
@@ -79,8 +95,11 @@ public:
 
 inline void Solver::add(var_t x)
 {
-    ipasir_add(m_solver, as_int(x));
-    DEBUG(2) << as_int(x) << " ";
+    const int y = as_int(x);
+    ipasir_add(m_solver, y);
+    if (m_output != nullptr)
+        (*m_output) << y << ((y != 0) ? ' ' : '\n');
+    DEBUG(2) << y << " ";
 }
 
 inline void Solver::assume(var_t ass)

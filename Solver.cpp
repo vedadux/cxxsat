@@ -1,6 +1,7 @@
 #include "Solver.h"
 #include <vector>
 #include <cassert>
+#include <chrono>
 
 using cxxsat::Solver;
 using cxxsat::var_t;
@@ -8,7 +9,7 @@ using cxxsat::var_t;
 Solver* cxxsat::solver = nullptr;
 
 Solver::Solver() :
-        m_state(STATE_INPUT), m_num_clauses(0), m_solver(ipasir_init())
+        m_state(STATE_INPUT), m_num_clauses(0), m_solver(ipasir_init()), m_output(nullptr)
 { }
 
 Solver::~Solver()
@@ -211,6 +212,22 @@ var_t Solver::make_at_least(const std::vector<var_t>& ins, uint32_t k)
     return -make_at_most(ins, k - 1);
 }
 
+int Solver::check_timed_helper(void* state)
+{
+    const auto* end = static_cast<std::chrono::time_point<std::chrono::steady_clock>*>(state);
+    const auto current{std::chrono::steady_clock::now()};
+    return current >= *end;
+}
+
+Solver::state_t Solver::check_timed(uint32_t num_seconds) noexcept
+{
+    const auto start{std::chrono::steady_clock::now()};
+    const std::chrono::duration<uint32_t> seconds{num_seconds};
+    const auto end = start + seconds;
+    void* state = (void*)(&end);
+    ipasir_set_terminate(m_solver, state, Solver::check_timed_helper);
+    return check();
+}
 
 Solver::state_t Solver::check() noexcept
 {
