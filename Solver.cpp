@@ -215,6 +215,7 @@ var_t Solver::make_at_least(const std::vector<var_t>& ins, uint32_t k)
 int Solver::check_timed_helper(void* state)
 {
     const auto* end = static_cast<std::chrono::time_point<std::chrono::steady_clock>*>(state);
+    if (end == nullptr) return 0;
     const auto current{std::chrono::steady_clock::now()};
     return current >= *end;
 }
@@ -226,11 +227,13 @@ Solver::state_t Solver::check_timed(uint32_t num_seconds) noexcept
     const auto end = start + seconds;
     void* state = (void*)(&end);
     ipasir_set_terminate(m_solver, state, Solver::check_timed_helper);
-    return check();
+    m_state = static_cast<state_t>(ipasir_solve(m_solver));
+    return m_state;
 }
 
 Solver::state_t Solver::check() noexcept
 {
+    ipasir_set_terminate(m_solver, nullptr, Solver::check_timed_helper);
     m_state = static_cast<state_t>(ipasir_solve(m_solver));
     return m_state;
 }

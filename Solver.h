@@ -37,6 +37,7 @@ private:
     template<typename... Ts>
     void add_clause_inner(var_t head, Ts... tail);
 
+    static int check_timed_helper(void* state);
 public:
     /// Returns the number of currently added clauses
     inline int num_clauses() const noexcept { return m_num_clauses; };
@@ -69,7 +70,6 @@ public:
     /// Public function for adding clauses from vectors into the solver
     inline void assume(var_t ass);
 
-    static int check_timed_helper(void* state);
     state_t check_timed(uint32_t num_seconds) noexcept;
     /// Main satisfiability checking routine
     state_t check() noexcept;
