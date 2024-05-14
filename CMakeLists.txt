@@ -23,7 +23,7 @@ elseif("${BACKEND}" STREQUAL "CADICAL")
     set(SOLVER_DIR ${PROJECT_SOURCE_DIR}/${SOLVER_NAME})
     set(SOLVER_BUILD_DIR ${SOLVER_DIR}/build)
     set(SOLVER_OPTIONS )
-    set(SOLVER_CONFIG_CMD ./configure)
+    set(SOLVER_CONFIG_CMD ${SOLVER_DIR}/configure)
     set(SOLVER_LIB_NAME lib${SOLVER_NAME})
     set(SOLVER_LIB_PATH ${SOLVER_BUILD_DIR}/libcadical.a)
     set(SOLVER_LIB_LINKAGE STATIC)
@@ -46,6 +46,7 @@ set_target_properties(${SOLVER_LIB_NAME} PROPERTIES
   LINKER_LANGUAGE CXX)
 
 add_library(cxxsat Solver.cpp VarManager.cpp vars.cpp)
+add_dependencies(cxxsat ${SOLVER_NAME})
 target_link_libraries(cxxsat ${SOLVER_LIB_NAME})
 
 enable_testing()
