@@ -220,20 +220,22 @@ int Solver::check_timed_helper(void* state)
     return current >= *end;
 }
 
-Solver::state_t Solver::check_timed(uint32_t num_seconds) noexcept
+Solver::state_t Solver::check_timed(double num_seconds) noexcept
 {
     const auto start{std::chrono::steady_clock::now()};
-    const std::chrono::duration<uint32_t> seconds{num_seconds};
-    const auto end = start + seconds;
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(num_seconds)
+    );
+    const auto end = start + duration;
     void* state = (void*)(&end);
     ipasir_set_terminate(m_solver, state, Solver::check_timed_helper);
     m_state = static_cast<state_t>(ipasir_solve(m_solver));
+    ipasir_set_terminate(m_solver, nullptr, nullptr);
     return m_state;
 }
 
 Solver::state_t Solver::check() noexcept
 {
-    ipasir_set_terminate(m_solver, nullptr, Solver::check_timed_helper);
     m_state = static_cast<state_t>(ipasir_solve(m_solver));
     return m_state;
 }

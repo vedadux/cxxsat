@@ -15,7 +15,7 @@ constexpr const char* REQUIRE_SAT = "Solver must be in STATE_SAT state";
 
 class Solver : public VarManager {
 public:
-    enum state_t {STATE_SAT = 10, STATE_UNSAT = 20, STATE_INPUT = 30};
+    enum state_t {STATE_SAT = 10, STATE_UNSAT = 20, STATE_INPUT = 0};
 private:
     /// Current state of the solver
     state_t m_state;
@@ -70,7 +70,7 @@ public:
     /// Public function for adding clauses from vectors into the solver
     inline void assume(var_t ass);
 
-    state_t check_timed(uint32_t num_seconds) noexcept;
+    state_t check_timed(double num_seconds) noexcept;
     /// Main satisfiability checking routine
     state_t check() noexcept;
     /// Return the value assigned to variable \a a
