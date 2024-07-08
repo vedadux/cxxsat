@@ -13,16 +13,26 @@ struct std::hash<binary_key_t>
 {
     uint64_t operator()(const binary_key_t& key) const noexcept
     {
-        return ((uint64_t) as_int(std::get<1>(key)) << 32) | (uint64_t) as_int(std::get<0>(key));
+        const uint64_t a = (uint64_t)as_int(std::get<0>(key)) <<  0;
+        const uint64_t b = (uint64_t)as_int(std::get<1>(key)) << 32;
+        
+        return a ^ b;
     }
 };
 
 template<>
 struct std::hash<ternary_key_t>
 {
+    inline uint64_t scramble(uint32_t x) const noexcept __attribute__((always_inline)) 
+    { 
+        return (x & 0x00ffffff) ^ ((x & 0xff000000) >> 8); // compress down to 24-bit
+    }
     uint64_t operator()(const ternary_key_t& key) const noexcept
     {
-        return std::_Hash_impl::hash(key.data(), key.size() * sizeof(var_t));
+        const uint64_t a = scramble(as_int(std::get<0>(key))) << 0;
+        const uint64_t b = scramble(as_int(std::get<1>(key))) << 20;
+        const uint64_t c = scramble(as_int(std::get<2>(key))) << 40;
+        return a ^ b ^ c;
     }
 };
 
